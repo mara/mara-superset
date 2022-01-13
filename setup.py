@@ -24,9 +24,11 @@ setup(
         'mara-db>=4.7.1',
         'mara-page>=1.3.0',
         'click',
-        'requests',
-        'superset>='
+        'requests'
     ],
+    extras_require={
+        'dev': ['apache-superset>=1.3.2']
+    },
 
     python_requires='>=3.6',
 

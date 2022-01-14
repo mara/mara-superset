@@ -1,6 +1,9 @@
 # run Apache Superset locally
 
 
+setup-superset: .copy-mara-superset-scripts
+
+
 run-superset:
 	.venv/bin/superset run -p 8088 --with-threads --reload --debugger
 

@@ -13,7 +13,7 @@ setup(
     name='mara-superset',
     version=about['__version__'],
 
-    description='Opinionated lightweight ELT pipeline framework',
+    description='Configuring Apache Superset from Python for a Mara App',
 
     long_description=get_long_description(),
     long_description_content_type='text/markdown',

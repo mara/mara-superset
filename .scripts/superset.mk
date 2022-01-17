@@ -1,17 +1,23 @@
 # run Apache Superset locally
 
+#superset-metadata-db ?= superset_metadata
+superset-config-path ?= app/superset_config.py
+
 
 setup-superset: .copy-mara-superset-scripts
 
 
 run-superset:
-	.venv/bin/superset run -p 8088 --with-threads --reload --debugger
+	SUPERSET_CONFIG_PATH=$(superset-config-path) .venv/bin/superset run -p 8088 --with-threads --reload --debugger
+
 
 install-superset:
 # https://superset.apache.org/docs/installation/installing-superset-from-scratch
-	.venv/bin/superset db upgrade
-	.venv/bin/superset superset fab create-admin
-	.venv/bin/superset superset init
+	echo export SUPERSET_CONFIG_PATH=$(superset-config-path) >> .venv/bin/activate
+	mkdir -p .superset
+	SUPERSET_CONFIG_PATH=$(superset-config-path) .venv/bin/superset db upgrade
+	SUPERSET_CONFIG_PATH=$(superset-config-path) .venv/bin/superset fab create-admin --username admin --firstname "Superset" --lastname "Admin" --email admin@superset.com --password admin
+	SUPERSET_CONFIG_PATH=$(superset-config-path) .venv/bin/superset init
 
 
 # copy scripts from mara-superset package to project code

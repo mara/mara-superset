@@ -1,11 +1,12 @@
 from functools import singledispatch
 import sys
+from tokenize import Number
 import typing as t
 
 import mara_db.dbs
 import mara_schema.config
 from mara_schema.entity import Entity
-from mara_schema.metric import Metric, SimpleMetric, ComposedMetric, Aggregation
+from mara_schema.metric import SimpleMetric, ComposedMetric, Aggregation, NumberFormat
 from mara_schema.attribute import Attribute, Type
 
 from . import config
@@ -66,7 +67,7 @@ def update_metadata() -> bool:
                         _attributes[name] = attribute
 
                 data_set_metadata_all = client.get(f'/dataset/{data_set_metadata["id"]}')['result']
-                #print(data_set_metadata_all)
+                print(data_set_metadata_all)
 
                 data_set_columns = []
 
@@ -99,11 +100,13 @@ def update_metadata() -> bool:
                 data_set_metrics = []
 
                 for name, _metric in data_set.metrics.items():
-                    metric = {'metric_name': name,
-                              'description': superset_description(_metric),
-                              'expression': superset_metric_expression(_metric),
-                              'metric_type': 'metric', #None, -- 'count', None
-                              }
+                    metric = {
+                        'metric_name': name,
+                        'description': superset_description(_metric),
+                        'expression': superset_metric_expression(_metric),
+                        'metric_type': 'metric', #None, -- 'count', None
+                        'd3format': superset_metric_d3format(_metric)
+                    }
 
                     existing_metric = next(filter(lambda m: m['metric_name'] == name, data_set_metadata_all.get('metrics',[])), None)
                     if existing_metric:
@@ -127,14 +130,10 @@ def superset_metric_expression(metric: t.Union[SimpleMetric, ComposedMetric]):
     """Turn a Mara Schema metric into a a sql formula"""
 
     if isinstance(metric, SimpleMetric):
-        if metric.aggregation == Aggregation.SUM:
-            return f'SUM("{metric.name}")'
-        elif metric.aggregation == Aggregation.AVERAGE:
-            return f'AVG("{metric.name}")'
-        elif metric.aggregation == Aggregation.COUNT:
-            return f'COUNT("{metric.name}")'
-        elif metric.aggregation == Aggregation.DISTINCT_COUNT:
+        if metric.aggregation == Aggregation.DISTINCT_COUNT:
             return f'COUNT(DISTINCT "{metric.name}")'
+        else:
+            return f'{str(metric.aggregation).upper()}("{metric.name}")'
 
     elif isinstance(metric, ComposedMetric):
         return metric.formula_template.format(
@@ -142,6 +141,22 @@ def superset_metric_expression(metric: t.Union[SimpleMetric, ComposedMetric]):
 
     else:
         assert False
+
+
+def superset_metric_d3format(metric: t.Union[SimpleMetric, ComposedMetric]) -> str:
+    """
+    Turns the metric number format into a D3 format.
+
+    See: https://github.com/d3/d3-format
+    """
+    if metric.number_format == NumberFormat.STANDARD:
+        return ',.2s'
+    elif metric.number_format == NumberFormat.CURRENCY:
+        return '$,.2f'
+    elif metric.number_format == NumberFormat.PERCENT:
+        return ',.2f%'
+    else:
+        return None
 
 
 @singledispatch

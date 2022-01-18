@@ -29,7 +29,10 @@ def superset_data_db_alias() -> str:
     """The alias of the database that Superset reads data from"""
     return 'superset-data-read'
 
-
 def superset_data_db_name() -> str:
     """The name (in Superset) of the database that Superset reads from"""
     return 'MyCompany DWH'
+
+def superset_data_db_schema() -> str:
+    """The name of the schema where the flattered data sets for Superset are stored"""
+    return 'superset'

@@ -120,6 +120,8 @@ def update_metadata() -> bool:
                     'metrics': data_set_metrics
                 })
 
+    return True
+
 
 def superset_description(entity: t.Union[Entity, SimpleMetric, ComposedMetric, Attribute]):
     """Returns the description of ths item"""

@@ -216,4 +216,5 @@ def __(db: mara_db.dbs.SQLiteDB):
 def __(db):
     port = db.port if db.port else 1433
     driver = db.odbc_driver.replace(' ','+')
-    return f'mssql+pyodbc://{db.user}:{db.password}@{db.host}:{port}/{db.database}?driver={driver}'
+    return (f'mssql+pyodbc://{db.user}:{db.password}@{db.host}:{port}/{db.database}?driver={driver}'
+            + ('&TrustServerCertificate=yes' if db.trust_server_certificate else ''))

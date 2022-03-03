@@ -20,11 +20,6 @@ def metabase_api_password():
     return 'admin'
 
 
-def superset_metadata_db_alias() -> str:
-    """The db alias of the Superset metadata database"""
-    return 'superset-metadata'
-
-
 def superset_data_db_alias() -> str:
     """The alias of the database that Superset reads data from"""
     return 'superset-data-read'

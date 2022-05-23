@@ -31,8 +31,9 @@ install-superset:
 	SUPERSET_CONFIG_PATH=$(superset-config-path) .venv/bin/superset init
 
 # copy scripts from mara-superset package to project code
+.copy-mara-superset-scripts: MODULE_LOCATION != .venv/bin/python -m pip show mara-superset | sed -n -e 's/Location: //p'
 .copy-mara-superset-scripts:
-	rsync --archive --recursive --itemize-changes  --delete packages/mara-superset/.scripts/ .scripts/mara-superset/
+	rsync --archive --recursive --itemize-changes  --delete $(MODULE_LOCATION)/mara-superset/.scripts/ .scripts/mara-superset/
 
 # remove virtual env for superset
 .cleanup-superset:

@@ -31,3 +31,8 @@ def superset_data_db_name() -> str:
 def superset_data_db_schema() -> str:
     """The name of the schema where the flattered data sets for Superset are stored"""
     return 'superset'
+
+def metadata_update_strategy():
+    """The default update strategy to be used when synchronizing metadata"""
+    from .metadata import UpdateStrategy
+    return UpdateStrategy.CREATE | UpdateStrategy.UPDATE

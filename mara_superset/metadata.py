@@ -1,10 +1,10 @@
+from enum import Flag, auto
 from functools import singledispatch
-import sys
-from tokenize import Number
 import typing as t
 
 import mara_db.dbs
 import mara_schema.config
+from mara_schema.data_set import DataSet
 from mara_schema.entity import Entity
 from mara_schema.metric import SimpleMetric, ComposedMetric, Aggregation, NumberFormat
 from mara_schema.attribute import Attribute, Type
@@ -13,8 +13,39 @@ from . import config
 from .client import SupersetClient
 
 
-def update_metadata() -> bool:
-    """Updates descriptions of tables & fields in Superset, creates metrics and flushes field caches"""
+class UpdateStrategy(Flag):
+    """
+    The update strategy for metadata:
+
+    CREATE  - when the model does not exist, create it
+    UPDATE  - when the model exists, update its columns. Columns which where removed will be retained and return a 'NULL' value
+    REPLACE - when the model exist, replace it.
+    DELETE  - when a table exists but no model exists, delete it. SQL Views created in SQL Lab are not deleted.
+
+    Suppgestion:
+     - use CREATE | UPDATE in production environments
+     - use only UPDATE in production environments where you want to control which models are exposed to the users.
+     - use CREATE | REPLACE | DELETE in test, and staging and development environments
+    """
+    CREATE = auto()
+    UPDATE = auto()
+    REPLACE = auto()
+    DELETE = auto()
+
+
+def update_metadata(update_strategy: UpdateStrategy = None) -> bool:
+    """
+    Updates descriptions of tables & fields in Superset, creates metrics and flushes field caches
+    
+    Args:
+        update_strategy: How the metadata should be updated. If not defined the value from config.metadata_update_strategy().
+    """
+    if not update_strategy:
+        update_strategy = config.metadata_update_strategy()
+    if not update_strategy:
+        # no update strategy defined: do nothing and end with everything OK
+        return True
+
     client = SupersetClient()
 
     dwh_database_id = \
@@ -54,71 +85,106 @@ def update_metadata() -> bool:
         if not dwh_database_id:
             raise Exception('Could not get the id from the newly created Database!')
 
+    def create_raw_dataset_metadata(data_set: DataSet) -> int:
+        response = client.post('/dataset/', data={
+            'database': dwh_database_id,
+            'schema': config.superset_data_db_schema().lower(),
+            'table_name': data_set.name
+        })
+        return response['id']
+
+    def update_dataset_metadata(data_set: DataSet, data_set_id, create_null_columns: bool = True):
+        _attributes: t.Dict[str, Attribute] = {}
+        for path, attributes in data_set.connected_attributes().items():
+            for name, attribute in attributes.items():
+                _attributes[name] = attribute
+
+        data_set_metadata_all = client.get(f'/dataset/{data_set_id}')['result']
+        #print(data_set_metadata_all)
+
+        data_set_columns = []
+
+        for column in data_set_metadata_all.get('columns',[]):
+            attribute = _attributes.get(column['column_name'], None)
+            if attribute:
+                data_set_columns.append({
+                    'id': column['id'],
+                    'column_name': column['column_name'],
+                    'description': superset_description(attribute) or 'tbd',
+                    #'filterable': column.get('filterable',True),
+                    'groupby': True,
+                    'is_active': True,
+                    'is_dttm': attribute.type == Type.DATE,
+                    #'python_date_format': column.get('python_date_format',True),
+                    #'type': column.get('type',True),
+                    'verbose_name': column['column_name']
+                })
+            elif create_null_columns:
+                data_set_columns.append({
+                    'id': column['id'],
+                    'column_name': column['column_name'],
+                    'description': '>> technical field hidden by schema sync',
+                    'is_active': False,
+                    'groupby': False
+                })
+
+        data_set_metrics = []
+
+        for name, _metric in data_set.metrics.items():
+            metric = {
+                'metric_name': name,
+                'description': superset_description(_metric),
+                'expression': superset_metric_expression(_metric),
+                'metric_type': 'metric', #None, -- 'count', None
+                'd3format': superset_metric_d3format(_metric)
+            }
+
+            existing_metric = next(filter(lambda m: m['metric_name'] == name, data_set_metadata_all.get('metrics',[])), None)
+            if existing_metric:
+                metric['id'] = existing_metric['id']
+
+            data_set_metrics.append(metric)
+
+        client.put(f'/dataset/{data_set_id}', data={
+            'description': superset_description(data_set.entity),
+            'columns': data_set_columns,
+            'metrics': data_set_metrics
+        })
+
+    def delete_dataset_metadata(data_set_id):
+        client.delete(f'/dataset/{data_set_id}')
+
     datasets_metadata = client.get('/dataset/')
     data_sets = {data_set.name: data_set for data_set in mara_schema.config.data_sets()}
 
     for data_set_metadata in datasets_metadata.get('result',[]):
         if str(data_set_metadata['schema']).lower() == config.superset_data_db_schema().lower():
+            #print(f"model: {data_set_metadata['table_name']}")
             data_set = data_sets.get(data_set_metadata['table_name'])
             if data_set:
-                _attributes: t.Dict[str, Attribute] = {}
-                for path, attributes in data_set.connected_attributes().items():
-                    for name, attribute in attributes.items():
-                        _attributes[name] = attribute
+                if bool(update_strategy & UpdateStrategy.UPDATE):
+                    print(f'Update dataset "{data_set.name}" ...')
+                    update_dataset_metadata(data_set, data_set_id=data_set_metadata["id"])
+                elif bool(update_strategy & UpdateStrategy.REPLACE):
+                    print(f'Replace dataset "{data_set.name}" ...')
+                    delete_dataset_metadata(data_set_id=data_set_metadata["id"])
+                    data_set_id = create_raw_dataset_metadata(data_set)
+                    update_dataset_metadata(data_set, data_set_id=data_set_id)
 
-                data_set_metadata_all = client.get(f'/dataset/{data_set_metadata["id"]}')['result']
-                print(data_set_metadata_all)
+                # removes the entity from the dict so we leave at the end only the
+                # data sets in the dict which are not 
+                del data_sets[data_set_metadata['table_name']]
+            elif bool(update_strategy & UpdateStrategy.DELETE):
+                if not data_set.get('is_sqllab_view',False):
+                    delete_dataset_metadata(data_set_id=data_set_metadata["id"])
 
-                data_set_columns = []
-
-                for column in data_set_metadata_all.get('columns',[]):
-                    attribute = _attributes.get(column['column_name'], None)
-                    if attribute:
-                        new_column = {
-                            'id': column['id'],
-                            'column_name': column['column_name'],
-                            'description': superset_description(attribute) or 'tbd',
-                            #'filterable': column.get('filterable',True),
-                            'groupby': True,
-                            'is_active': True,
-                            'is_dttm': attribute.type == Type.DATE,
-                            #'python_date_format': column.get('python_date_format',True),
-                            #'type': column.get('type',True),
-                            'verbose_name': column['column_name']
-                        }
-                    else:
-                        new_column = {
-                            'id': column['id'],
-                            'column_name': column['column_name'],
-                            'description': '>> technical field hidden by schema sync',
-                            'is_active': False,
-                            'groupby': False
-                        }
-
-                    data_set_columns.append(new_column)
-
-                data_set_metrics = []
-
-                for name, _metric in data_set.metrics.items():
-                    metric = {
-                        'metric_name': name,
-                        'description': superset_description(_metric),
-                        'expression': superset_metric_expression(_metric),
-                        'metric_type': 'metric', #None, -- 'count', None
-                        'd3format': superset_metric_d3format(_metric)
-                    }
-
-                    existing_metric = next(filter(lambda m: m['metric_name'] == name, data_set_metadata_all.get('metrics',[])), None)
-                    if existing_metric:
-                        metric['id'] = existing_metric['id']
-
-                    data_set_metrics.append(metric)
-
-                client.put(f'/dataset/{data_set_metadata["id"]}', data={
-                    'description': superset_description(data_set.entity),
-                    'columns': data_set_columns,
-                    'metrics': data_set_metrics
-                })
+    for data_set in data_sets.values():
+        if bool(update_strategy & UpdateStrategy.CREATE):
+            print(f'Create dataset "{data_set.name}" ...')
+            data_set_id = create_raw_dataset_metadata(data_set)
+            update_dataset_metadata(data_set, data_set_id=data_set_id)
+        else:
+            print(f'[NOTE] The data set {data_set.name} does not exist in Superset and will not be created because of the used update strategy.')
 
     return True
 
@@ -161,6 +227,9 @@ def superset_metric_d3format(metric: t.Union[SimpleMetric, ComposedMetric]) -> s
         return None
 
 
+# To see supported drivers by Apache Superset see:
+# https://superset.apache.org/docs/databases/installing-database-drivers/
+
 @singledispatch
 def db_backend_name(db) -> str:
     """Returns the db backend name for a mara db alias"""
@@ -170,13 +239,33 @@ def db_backend_name(db) -> str:
 def __(db: str):
     return db_backend_name(mara_db.dbs.db(db))
 
-@db_backend_name.register(mara_db.dbs.SQLiteDB)
+@db_backend_name.register(mara_db.dbs.PostgreSQLDB)
 def __(db):
-    return 'sqlite'
+    return 'postgresql'
+
+#@db_backend_name.register(mara_db.dbs.RedshiftDB)
+#def __(db):
+#    return 'redshift'
+
+#@db_backend_name.register(mara_db.dbs.BigQueryDB)
+#def __(db):
+#    return 'bigquery'
+
+#@db_backend_name.register(mara_db.dbs.MysqlDB)
+#def __(db):
+#    return 'mysql'
 
 @db_backend_name.register(mara_db.dbs.SQLServerDB)
 def __(db):
     return 'mssql'
+
+#@db_backend_name.register(mara_db.dbs.OracleDB)
+#def __(db):
+#    return 'oracle'
+
+@db_backend_name.register(mara_db.dbs.SQLiteDB)
+def __(db):
+    return 'sqlite'
 
 
 @singledispatch
@@ -193,7 +282,6 @@ def __(db: mara_db.dbs.PostgreSQLDB):
     return f'postgresql+psycopg2://{db.user}{":" + db.password if db.password else ""}@{db.host}' \
         + f'{":" + str(db.port) if db.port else ""}/{db.database}'
 
-
 #@sqlalchemy_url.register(mara_db.dbs.BigQueryDB)
 #def __(db: mara_db.dbs.BigQueryDB):
 #    # creates bigquery dialect
@@ -207,14 +295,13 @@ def __(db: mara_db.dbs.PostgreSQLDB):
 #                                    credentials_path=db.service_account_json_file_name,
 #                                    location=db.location)
 
-
-@sqlalchemy_url.register(mara_db.dbs.SQLiteDB)
-def __(db: mara_db.dbs.SQLiteDB):
-    return f'sqlite:///{db.file_name}'
-
 @sqlalchemy_url.register(mara_db.dbs.SQLServerDB)
 def __(db):
     port = db.port if db.port else 1433
     driver = db.odbc_driver.replace(' ','+')
     return (f'mssql+pyodbc://{db.user}:{db.password}@{db.host}:{port}/{db.database}?driver={driver}'
             + ('&TrustServerCertificate=yes' if db.trust_server_certificate else ''))
+
+@sqlalchemy_url.register(mara_db.dbs.SQLiteDB)
+def __(db: mara_db.dbs.SQLiteDB):
+    return f'sqlite:///{db.file_name}'

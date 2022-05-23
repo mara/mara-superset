@@ -23,7 +23,7 @@ Skip the steps 3 to 6.
 2. Add `.scripts/mara-superset/superset.mk` to your Makefile
 
 3. Call `make install-local-superset`
-4. In case you want to connect to a Microsoft SQL database, call `make local-superset-mssql` as well
+4. In case you want to connect to a Microsoft SQL database, call `make install-local-superset-mssql` as well
 5. Create a new postgres database via sql statement
 ```sql
 CREATE DATABASE superset_metadata ENCODING UTF8 TEMPLATE template0;

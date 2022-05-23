@@ -17,4 +17,4 @@ def MARA_ACL_RESOURCES():
 
 def MARA_NAVIGATION_ENTRIES():
     from . import views
-    return {'Metabase': views.navigation_entry()}
+    return {'Superset': views.navigation_entry()}

@@ -14,8 +14,8 @@ class SupersetClient(object):
 
         response = self.session.post(
             self.base_url + '/security/login',
-            json={'username': config.metabase_api_username(),
-                  'password': config.metabase_api_password(),
+            json={'username': config.superset_api_username(),
+                  'password': config.superset_api_password(),
                   'provider': 'db',
                   'refresh': True})
 

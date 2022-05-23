@@ -11,11 +11,11 @@ def internal_superset_url():
     return 'http://localhost:8088'
 
 
-def metabase_api_username() -> str:
+def superset_api_username() -> str:
     """The email of the user for accessing the superset api"""
     return 'admin'
 
-def metabase_api_password():
+def superset_api_password():
     """The password of the user for accessing the superset api"""
     return 'admin'
 

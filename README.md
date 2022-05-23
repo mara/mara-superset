@@ -71,8 +71,8 @@ patch(mara_superset.config.external_superset_url)(lambda: 'https://external-supe
 patch(mara_superset.config.internal_superset_url)(lambda: 'https://internal-superset-dns-name.local/')
 
 # the api username and password
-patch(mara_superset.config.metabase_api_username)(lambda: 'admin')
-patch(mara_superset.config.metabase_api_password)(lambda: 'admin')
+patch(mara_superset.config.superset_api_username)(lambda: 'admin')
+patch(mara_superset.config.superset_api_password)(lambda: 'admin')
 
 # the mara db alias for the database containing superset datasets
 patch(mara_superset.config.superset_data_db_alias)(lambda: 'superset-data-read')

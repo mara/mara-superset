@@ -94,6 +94,6 @@ The default username is `admin` and the password `admin` as well.
 
 ### Metadata sync
 
-If you have a data warehouse schema defined in [Mara Schema](https://github.com/mara/mara-schema), then you can automatically sync column descriptions and metric definitions with the update_metadata function in [mara_superset/metadata.py].
+If you have a data warehouse schema defined in [Mara Schema](https://github.com/mara/mara-schema), then you can automatically sync column descriptions and metric definitions with the update_metadata function in [mara_superset/metadata.py](mara_superset/metadata.py).
 
 The database is created automatically. Datasets with their columns and metrics are synchronized after the data set table has been added manually via the UI. New columns are only added after executing the *Sync columns from Source* function via the Superset UI in the data set .

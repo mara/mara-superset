@@ -88,7 +88,7 @@ def update_metadata(update_strategy: UpdateStrategy = None) -> bool:
     def create_raw_dataset_metadata(data_set: DataSet) -> int:
         response = client.post('/dataset/', data={
             'database': dwh_database_id,
-            'schema': config.superset_data_db_schema().lower(),
+            'schema': config.superset_data_db_schema(),
             'table_name': data_set.name
         })
         return response['id']
@@ -154,11 +154,18 @@ def update_metadata(update_strategy: UpdateStrategy = None) -> bool:
     def delete_dataset_metadata(data_set_id):
         client.delete(f'/dataset/{data_set_id}')
 
-    datasets_metadata = client.get('/dataset/')
     data_sets = {data_set.name: data_set for data_set in mara_schema.config.data_sets()}
+    DATASETS_METADATA_QUERY='/dataset/?q=(order_column:changed_on_delta_humanized,order_direction:desc,page:{0},page_size:{1},columns:!(id,schema,table_name),filters:!((col:schema,opr:eq,value:{2})))'
+    PAGE_SIZE = 20
+    datasets_page: int = 0
+    datasets_iter_count: int = 0
 
-    for data_set_metadata in datasets_metadata.get('result',[]):
-        if str(data_set_metadata['schema']).lower() == config.superset_data_db_schema().lower():
+    datasets_metadata = client.get(DATASETS_METADATA_QUERY.format(datasets_page, PAGE_SIZE, config.superset_data_db_schema()))
+    datasets_count = datasets_metadata.get('count',0)
+
+    while datasets_metadata.get('result'):
+        datasets_iter_count += len(datasets_metadata['result'])
+        for data_set_metadata in datasets_metadata['result']:
             #print(f"model: {data_set_metadata['table_name']}")
             data_set = data_sets.get(data_set_metadata['table_name'])
             if data_set:
@@ -177,6 +184,12 @@ def update_metadata(update_strategy: UpdateStrategy = None) -> bool:
             elif bool(update_strategy & UpdateStrategy.DELETE):
                 if not data_set.get('is_sqllab_view',False):
                     delete_dataset_metadata(data_set_id=data_set_metadata["id"])
+
+        # get next page if necessary
+        if datasets_iter_count >= datasets_count:
+            break
+        datasets_page += 1
+        datasets_metadata = client.get(DATASETS_METADATA_QUERY.format(datasets_page, PAGE_SIZE, config.superset_data_db_schema()))
 
     for data_set in data_sets.values():
         if bool(update_strategy & UpdateStrategy.CREATE):

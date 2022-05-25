@@ -1,3 +1,4 @@
+__version__ = '0.1.0'
 
 def MARA_CONFIG_MODULES():
     from . import config

@@ -203,7 +203,7 @@ def update_metadata(update_strategy: UpdateStrategy = None) -> bool:
 
 
 def superset_description(entity: t.Union[Entity, SimpleMetric, ComposedMetric, Attribute]):
-    """Returns the description of ths item"""
+    """Returns the description of the item"""
     return entity.description
 
 

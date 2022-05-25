@@ -5,8 +5,12 @@ from urllib.parse import urljoin
 from . import config
 
 class SupersetClient(object):
+    """
+    A client class for interacting with the Superset API
+    
+    See also: https://superset.apache.org/docs/api
+    """
     def __init__(self):
-        """A client for interacting with the Superset API"""
         self.base_url = urljoin(config.internal_superset_url(),'/api/v1')
         self.token = None
         self.refresh_token = None

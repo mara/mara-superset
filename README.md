@@ -17,4 +17,4 @@ The database is created automatically. Datasets with their columns and metrics a
 
 ## Installation and more
 
-Take a look at the official [Documentation](https://mara-superset.readthedocs.io/en/latest/installation.html).
+Take a look at the official [Documentation](https://mara-superset.readthedocs.io/en/latest/).

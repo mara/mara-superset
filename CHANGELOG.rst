@@ -1,6 +1,13 @@
 Changelog
 =========
 
+Version 1.0.1
+-------------
+
+Released 29.05.2022
+
+- fix .scripts folder missing in pypi package
+
 Version 1.0.0
 -------------
 

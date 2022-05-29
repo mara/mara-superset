@@ -1,5 +1,10 @@
 # Mara Superset
 
+[![mara-superset](https://github.com/mara/mara-superset/actions/workflows/build.yaml/badge.svg)](https://github.com/mara/mara-superset/actions/workflows/build.yaml)
+[![PyPI - License](https://img.shields.io/pypi/l/mara-superset.svg)](https://github.com/mara/mara-superset/blob/master/LICENSE)
+[![PyPI version](https://badge.fury.io/py/mara-superset.svg)](https://badge.fury.io/py/mara-superset)
+[![Slack Status](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://communityinviter.com/apps/mara-users/public-invite)
+
 Automating the setup and configuration of [Apache Superset](https://github.com/apache/superset) instances from the Mara framework.
 
 * Syncing of database

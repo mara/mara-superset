@@ -1,6 +1,13 @@
 Changelog
 =========
 
+Version 1.0.3
+-------------
+
+Released 08.06.2022
+
+- fix makefile copy scripts target .copy-mara-superset
+
 Version 1.0.2
 -------------
 

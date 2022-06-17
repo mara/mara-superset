@@ -19,9 +19,11 @@ project = 'Mara Superset'
 copyright = '2022, Mara contributors'
 author = 'Mara contributors'
 
+# The short X.Y version.
+from mara_superset import __version__
+version = __version__
 # The full version, including alpha/beta/rc tags
-release = '1.0.0'
-version = '1.0'
+release = version
 
 
 # -- General configuration ---------------------------------------------------

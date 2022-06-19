@@ -16,7 +16,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Mara Superset'
-copyright = '2022, Mara contributors'
+copyright = '2021-2022, Mara contributors'
 author = 'Mara contributors'
 
 # The short X.Y version.

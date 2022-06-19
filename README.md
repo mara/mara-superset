@@ -22,8 +22,8 @@ The database is created automatically. Datasets with their columns and metrics a
 
 ## Links
 
-* Documentation: https://mara-superset.readthedocs.io/en/stable/
-* Changes: https://mara-superset.readthedocs.io/en/stable/changes.html
+* Documentation: https://mara-superset.readthedocs.io/
+* Changes: https://mara-superset.readthedocs.io/en/latest/changes.html
 * PyPI Releases: https://pypi.org/project/mara-superset/
 * Source Code: https://github.com/mara/mara-superset
 * Issue Tracker: https://github.com/mara/mara-superset/issues/

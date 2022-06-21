@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Version 1.0.4
+----------
+
+Released 21.06.2022
+
+- fix metric expression avoid divisions by 0 (taken from mara_schema implementation)
+- fix composed metrics with NULL values (taken from mara_schema implementation)
+- fix wrong format for NumberFormat.PERCENT in metadata sync.
+
 Version 1.0.3
 -------------
 

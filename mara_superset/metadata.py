@@ -235,7 +235,7 @@ def superset_metric_d3format(metric: t.Union[SimpleMetric, ComposedMetric]) -> s
     elif metric.number_format == NumberFormat.CURRENCY:
         return '$,.2f'
     elif metric.number_format == NumberFormat.PERCENT:
-        return ',.2f%'
+        return ',.2%'
     else:
         return None
 

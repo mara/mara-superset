@@ -213,12 +213,19 @@ def superset_metric_expression(metric: t.Union[SimpleMetric, ComposedMetric]):
     if isinstance(metric, SimpleMetric):
         if metric.aggregation == Aggregation.DISTINCT_COUNT:
             return f'COUNT(DISTINCT "{metric.name}")'
-        else:
+        elif metric.aggregation == Aggregation.COUNT:
             return f'{str(metric.aggregation).upper()}("{metric.name}")'
+        else:
+            # Coalesce with 0 so that metrics that combine simplemetrics work ( in SQL `1 + NULL` is `NULL` )
+            return f'COALESCE({str(metric.aggregation).upper()}("{metric.name}"),0)'
 
     elif isinstance(metric, ComposedMetric):
-        return metric.formula_template.format(
-            *[f'({superset_metric_expression(metric)})' for metric in metric.parent_metrics])
+        if '/' in metric.formula_template:  # avoid divisions by 0
+            return metric.formula_template.format(
+                *[f'(NULLIF({superset_metric_expression(metric)}, 0.0))' for metric in metric.parent_metrics])
+        else:  # render metric template
+            return metric.formula_template.format(
+                *[f'({superset_metric_expression(metric)})' for metric in metric.parent_metrics])
 
     else:
         assert False

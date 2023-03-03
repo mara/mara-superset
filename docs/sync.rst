@@ -16,9 +16,9 @@ The update strategy is defined via an flag Enum ``UpdateStrategy`` which support
     When the model does not exist in Superset, create it
 
 .. py:data:: UPDATE
-    
+
     When the model exists already in Superset, update its columns. Columns which where removed will be retained and return a 'NULL' value.
-    
+
     .. warning::
         New columns are (currently) not added automatically. You need to run schema sync. manually in Superset and then run the metadata sync again.
         This might drop columns which does not exist anymore leaving existing charts in an inconsistent state (!).

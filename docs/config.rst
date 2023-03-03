@@ -61,7 +61,7 @@ and can be changed with the `monkey patch`_ from `Mara App`_. An example can be 
 .. py:data:: superset_data_db_schema
 
     The name of the schema where the flattered data sets for Superset are stored
-    
+
     Default: ``'superset'``
 
 .. py:data:: metadata_update_strategy

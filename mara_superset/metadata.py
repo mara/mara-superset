@@ -36,7 +36,7 @@ class UpdateStrategy(Flag):
 def update_metadata(update_strategy: UpdateStrategy = None) -> bool:
     """
     Updates descriptions of tables & fields in Superset, creates metrics and flushes field caches
-    
+
     Args:
         update_strategy: How the metadata should be updated. If not defined the value from config.metadata_update_strategy().
     """
@@ -179,7 +179,7 @@ def update_metadata(update_strategy: UpdateStrategy = None) -> bool:
                     update_dataset_metadata(data_set, data_set_id=data_set_id)
 
                 # removes the entity from the dict so we leave at the end only the
-                # data sets in the dict which are not 
+                # data sets in the dict which are not
                 del data_sets[data_set_metadata['table_name']]
             elif bool(update_strategy & UpdateStrategy.DELETE):
                 if not data_set.get('is_sqllab_view',False):

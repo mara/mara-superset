@@ -7,7 +7,7 @@ from . import config
 class SupersetClient(object):
     """
     A client class for interacting with the Superset API
-    
+
     See also: https://superset.apache.org/docs/api
     """
     def __init__(self):

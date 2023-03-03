@@ -30,4 +30,4 @@ clean:
 	mkdir -p .venv
 	cd .venv && $(.PYTHON3) -m venv --copies --prompt='[$(shell basename `pwd`)/.venv]' .
 
-	.venv/bin/python -m pip install --upgrade pip 
+	.venv/bin/python -m pip install --upgrade pip
